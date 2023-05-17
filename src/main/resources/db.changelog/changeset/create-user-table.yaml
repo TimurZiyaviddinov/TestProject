@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-table
+      author: Timur Ziyaviddinov
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: user_id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: bank_id
+                  type: varchar(30)
+              - column:
+                  name: surname
+                  type: varchar(50)
+              - column:
+                  name: username
+                  type: varchar(30)
+              - column:
+                  name: patronymic
+                  type: varchar(30)
+              - column:
+                  name: birth_date
+                  type: datetime
+              - column:
+                  name: passport_number
+                  type: varchar(11)
+              - column:
+                  name: birth_place
+                  type: varchar(255)
+              - column:
+                  name: phone
+                  type: varchar(11)
+              - column:
+                  name: email
+                  type: varchar(50)
+              - column:
+                  name: registration_place
+                  type: varchar(255)
+              - column:
+                  name: living_place
+                  type: varchar(255)
