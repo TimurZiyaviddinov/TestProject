@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.isNull;
 
@@ -31,26 +30,26 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
+//    @Transactional
     public void createUser(UserDTO userDTO) {
         userRepository.save(UserMapper.INSTANCE.toEntity(userDTO));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<UserDTO> getAllUser(UserDTO userDTO) {
         if (isNull(userDTO.getUsername()) && isNull(userDTO.getSurname())
-        && isNull(userDTO.getPhone()) && isNull(userDTO.getPatronymic()) && isNull(userDTO.getEmail())) {
-            throw new UserNotFoundException("Необходимо указать хотя бы одно поле: фамилия, имя, отчество, телефон, email");
+                && isNull(userDTO.getPhone()) && isNull(userDTO.getPatronymic()) && isNull(userDTO.getEmail())) {
+            throw new UserNotFoundException("Необходимо указать хотя бы одно из полей: фамилия, имя, отчество, телефон, email");
         }
 
-        List <UserDTO> userDTOList = userRepository.findAll(Specification.where(UserSpecifications.likeUsername(userDTO.getUsername()))
-                .and(UserSpecifications.likeSurname(userDTO.getSurname()))
-                .and(UserSpecifications.likePatronymic(userDTO.getPatronymic()))
-                .and(UserSpecifications.likeEmail(userDTO.getEmail()))
-                .and(UserSpecifications.likePhone(userDTO.getPhone()))).stream().map(userMapper::toDTO).collect(Collectors.toList());
+        List<UserDTO> userDTOList = userRepository.findAll(Specification.where(UserSpecifications.likeUsername(userDTO.getUsername()))
+                        .and(UserSpecifications.likeSurname(userDTO.getSurname()))
+                        .and(UserSpecifications.likePatronymic(userDTO.getPatronymic()))
+                        .and(UserSpecifications.likeEmail(userDTO.getEmail()))
+                        .and(UserSpecifications.likePhone(userDTO.getPhone())))
+                .stream().map(userMapper::toDTO).toList();
 
-//        List <UserDTO> userDTOList = userRepository.findAll(userDTO.getSurname(), userDTO.getUsername(), userDTO.getPatronymic(),
-//                userDTO.getPhone(), userDTO.getEmail()).stream().map(UserMapper.INSTANCE::toDTO).toList();
         if (userDTOList.isEmpty()) {
             throw new UserNotFoundException("Пользователь не найден");
         }
@@ -61,48 +60,42 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void validate(UserDTO userDTO, String source) {
         switch (source) {
-            case ("mail"): {
+            case ("mail") -> {
                 if (isNull(userDTO.getUsername()) || userDTO.getEmail() == null) {
-//                    return RestControllerAdvice.generateResponse("Имя и электронная почта должны быть заполнены", HttpStatus.I_AM_A_TEAPOT);
                     throw new UserBySourceValidationException("Имя и электронная почта должны быть заполнены"); //TODO через ENUM
                 } else {
                     createUser(userDTO);
-                    break;
                 }
             }
-            case ("mobile"): {
+            case ("mobile") -> {
                 if (userDTO.getPhone() == null) {
-//                    return RestControllerAdvice.generateResponse("Номер телефона должен быть заполнен", HttpStatus.I_AM_A_TEAPOT);
                     throw new UserBySourceValidationException("Номер телефона должен быть заполнен");
                 } else {
                     createUser(userDTO);
-                    break;
                 }
             }
-            case ("bank"): {
+            case ("bank") -> {
                 if (userDTO.getBankId() == null || userDTO.getUsername() == null || userDTO.getSurname() == null
                         || userDTO.getPatronymic() == null || userDTO.getPassportNumber() == null
                         || isNull(userDTO.getBirthDate())) {
-//                    return RestControllerAdvice.generateResponse("Банковский счет, фамилия, имя, отчество, дата рождения, номер паспорта должны быть заполнены", HttpStatus.I_AM_A_TEAPOT);
                     throw new UserBySourceValidationException("Банковский счет, фамилия, имя, отчество, дата рождения, номер паспорта должны быть заполнены");
                 } else {
                     createUser(userDTO);
-                    break;
                 }
             }
-            case ("gosuslugi"): {
+            case ("gosuslugi") -> {
                 if (userDTO.getBankId() == null || userDTO.getUsername() == null || userDTO.getSurname() == null
                         || userDTO.getPatronymic() == null || userDTO.getPassportNumber() == null
                         || isNull(userDTO.getBirthDate())
                         || userDTO.getBirthPlace() == null || userDTO.getPhone() == null
                         || userDTO.getRegistrationPlace() == null) {
-//                    return RestControllerAdvice.generateResponse("Банковский счет, фамилия, имя, отчество, дата рождения, номер паспорта, место рождения, телефон, адрес регистрации должны быть заполнены", HttpStatus.I_AM_A_TEAPOT);
                     throw new UserBySourceValidationException("Банковский счет, фамилия, имя, отчество, дата рождения, номер паспорта, место рождения, телефон, адрес регистрации должны быть заполнены");
                 } else {
                     createUser(userDTO);
-                    break;
                 }
             }
+            default -> throw new UserBySourceValidationException("Неизвестный ресурс");
+
         }
     }
 }
