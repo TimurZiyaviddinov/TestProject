@@ -1,17 +1,18 @@
 package com.example.demo.service;
 
-import com.example.demo.dto.UserDTO;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import com.example.demo.dto.FindUserDto;
+import com.example.demo.dto.UserDto;
 
 import java.util.List;
 
 public interface UserService {
 
-    void createUser(UserDTO userDTO);
+    void createUser(UserDto userDTO);
 
-    List<UserDTO> getAllUser(UserDTO userDTO);
+    List<UserDto> getAllUser(FindUserDto findUserDto);
 
-    void validate(UserDTO userDTO, String source);
+    UserDto getUserById (Long id);
+
+    void validateAndSave(UserDto userDTO, String source);
 
 }

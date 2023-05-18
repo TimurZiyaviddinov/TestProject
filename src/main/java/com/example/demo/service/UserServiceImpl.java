@@ -1,12 +1,14 @@
 package com.example.demo.service;
 
-import com.example.demo.dto.UserDTO;
+import com.example.demo.dto.FindUserDto;
+import com.example.demo.dto.UserDto;
 import com.example.demo.exceptions.UserBySourceValidationException;
 import com.example.demo.exceptions.UserNotFoundException;
 import com.example.demo.mappers.UserMapper;
 import com.example.demo.repository.UserRepository;
-import com.example.demo.repository.UserSpecifications;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.demo.util.UserSpecifications;
+import com.example.demo.util.ExceptionMessage;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,85 +18,83 @@ import java.util.List;
 import static java.util.Objects.isNull;
 
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 
-
-    @Autowired
-    public UserServiceImpl(UserRepository userRepository,
-                           UserMapper userMapper) {
-        this.userRepository = userRepository;
-        this.userMapper = userMapper;
-    }
-
     @Override
-//    @Transactional
-    public void createUser(UserDTO userDTO) {
-        userRepository.save(UserMapper.INSTANCE.toEntity(userDTO));
+    public void createUser(UserDto userDTO) {
+        userRepository.save(userMapper.toEntity(userDTO));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserDTO> getAllUser(UserDTO userDTO) {
-        if (isNull(userDTO.getUsername()) && isNull(userDTO.getSurname())
-                && isNull(userDTO.getPhone()) && isNull(userDTO.getPatronymic()) && isNull(userDTO.getEmail())) {
-            throw new UserNotFoundException("Необходимо указать хотя бы одно из полей: фамилия, имя, отчество, телефон, email");
+    public List<UserDto> getAllUser(FindUserDto findUserDto) {
+        if (isNull(findUserDto.getUsername()) && isNull(findUserDto.getSurname())
+                && isNull(findUserDto.getPhone()) && isNull(findUserDto.getPatronymic()) && isNull(findUserDto.getEmail())) {
+            throw new UserNotFoundException(ExceptionMessage.WRONG_SEARCH.getMessage());
         }
 
-        List<UserDTO> userDTOList = userRepository.findAll(Specification.where(UserSpecifications.likeUsername(userDTO.getUsername()))
-                        .and(UserSpecifications.likeSurname(userDTO.getSurname()))
-                        .and(UserSpecifications.likePatronymic(userDTO.getPatronymic()))
-                        .and(UserSpecifications.likeEmail(userDTO.getEmail()))
-                        .and(UserSpecifications.likePhone(userDTO.getPhone())))
+        List<UserDto> userDtoList = userRepository.findAll(Specification.where(UserSpecifications.equalUsername(findUserDto.getUsername()))
+                        .and(UserSpecifications.equalSurname(findUserDto.getSurname()))
+                        .and(UserSpecifications.equalPatronymic(findUserDto.getPatronymic()))
+                        .and(UserSpecifications.equalEmail(findUserDto.getEmail()))
+                        .and(UserSpecifications.equalPhone(findUserDto.getPhone())))
                 .stream().map(userMapper::toDTO).toList();
 
-        if (userDTOList.isEmpty()) {
-            throw new UserNotFoundException("Пользователь не найден");
+        if (userDtoList.isEmpty()) {
+            throw new UserNotFoundException(ExceptionMessage.USER_NOT_FOUND.getMessage());
         }
-        return userDTOList;
+        return userDtoList;
+    }
+
+    @Override
+    public UserDto getUserById(Long id) {
+        return userMapper.toDTO(userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(ExceptionMessage.USER_NOT_FOUND.getMessage())));
+
     }
 
     @Override
     @Transactional
-    public void validate(UserDTO userDTO, String source) {
+    public void validateAndSave(UserDto userDTO, String source) {
         switch (source) {
             case ("mail") -> {
-                if (isNull(userDTO.getUsername()) || userDTO.getEmail() == null) {
-                    throw new UserBySourceValidationException("Имя и электронная почта должны быть заполнены"); //TODO через ENUM
+                if (isNull(userDTO.getUsername()) || isNull(userDTO.getEmail())) {
+                    throw new UserBySourceValidationException(ExceptionMessage.MAIL_VALIDATION_ERROR.getMessage());
                 } else {
                     createUser(userDTO);
                 }
             }
             case ("mobile") -> {
-                if (userDTO.getPhone() == null) {
-                    throw new UserBySourceValidationException("Номер телефона должен быть заполнен");
+                if (isNull(userDTO.getPhone())) {
+                    throw new UserBySourceValidationException(ExceptionMessage.MOBILE_VALIDATION_ERROR.getMessage());
                 } else {
                     createUser(userDTO);
                 }
             }
             case ("bank") -> {
-                if (userDTO.getBankId() == null || userDTO.getUsername() == null || userDTO.getSurname() == null
-                        || userDTO.getPatronymic() == null || userDTO.getPassportNumber() == null
+                if (isNull(userDTO.getBankId()) || isNull(userDTO.getUsername()) || isNull(userDTO.getSurname())
+                        || isNull(userDTO.getPatronymic()) || isNull(userDTO.getPassportNumber())
                         || isNull(userDTO.getBirthDate())) {
-                    throw new UserBySourceValidationException("Банковский счет, фамилия, имя, отчество, дата рождения, номер паспорта должны быть заполнены");
+                    throw new UserBySourceValidationException(ExceptionMessage.BANK_VALIDATION_ERROR.getMessage());
                 } else {
                     createUser(userDTO);
                 }
             }
             case ("gosuslugi") -> {
-                if (userDTO.getBankId() == null || userDTO.getUsername() == null || userDTO.getSurname() == null
-                        || userDTO.getPatronymic() == null || userDTO.getPassportNumber() == null
-                        || isNull(userDTO.getBirthDate())
-                        || userDTO.getBirthPlace() == null || userDTO.getPhone() == null
-                        || userDTO.getRegistrationPlace() == null) {
-                    throw new UserBySourceValidationException("Банковский счет, фамилия, имя, отчество, дата рождения, номер паспорта, место рождения, телефон, адрес регистрации должны быть заполнены");
+                if (isNull(userDTO.getBankId()) || isNull(userDTO.getUsername()) || isNull(userDTO.getSurname())
+                        || isNull(userDTO.getPatronymic()) || isNull(userDTO.getPassportNumber())
+                        || isNull(userDTO.getBirthDate()) || isNull(userDTO.getBirthPlace()) || isNull(userDTO.getPhone())
+                        || isNull(userDTO.getRegistrationPlace())) {
+                    throw new UserBySourceValidationException(ExceptionMessage.GOSUSLUGI_VALIDATION_ERROR.getMessage());
                 } else {
                     createUser(userDTO);
                 }
             }
-            default -> throw new UserBySourceValidationException("Неизвестный ресурс");
+            default -> throw new UserBySourceValidationException(ExceptionMessage.SOURCE_NOT_FOUND.getMessage());
 
         }
     }

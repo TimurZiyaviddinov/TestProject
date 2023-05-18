@@ -5,16 +5,18 @@ import com.example.demo.exceptions.UserNotFoundException;
 import com.example.demo.util.ErrorResponse;
 import com.example.demo.util.ValidationErrorResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@org.springframework.web.bind.annotation.RestControllerAdvice
-public class RestControllerAdvice {
+@RestControllerAdvice
+public class UserControllerAdvice {
 
 
     @ExceptionHandler({MethodArgumentNotValidException.class})
@@ -33,7 +35,8 @@ public class RestControllerAdvice {
     }
 
     @ExceptionHandler({UserBySourceValidationException.class,
-            UserNotFoundException.class})
+            UserNotFoundException.class,
+    HttpMessageNotReadableException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleUserBySourceValidationException(Exception ex) {
         return handleException(ex);

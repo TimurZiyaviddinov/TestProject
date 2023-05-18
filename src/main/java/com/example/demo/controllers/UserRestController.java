@@ -1,6 +1,7 @@
 package com.example.demo.controllers;
 
-import com.example.demo.dto.UserDTO;
+import com.example.demo.dto.FindUserDto;
+import com.example.demo.dto.UserDto;
 import com.example.demo.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,13 +21,18 @@ public class UserRestController {
         this.userService = userService;
     }
 
-    @PostMapping
-    void addNewUser (@RequestHeader("SOURCE") String source, @Valid @RequestBody UserDTO userDTO) {
-        userService.validate(userDTO, source);
+    @GetMapping("/{id}")
+    ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 
-    @PostMapping("/get")
-    ResponseEntity<List<UserDTO>> getUser (@RequestBody UserDTO userDTO) {
-        return ResponseEntity.ok(userService.getAllUser(userDTO));
+    @PostMapping
+    void addNewUser (@RequestHeader("SOURCE") String source, @Valid @RequestBody UserDto userDTO) {
+        userService.validateAndSave(userDTO, source);
+    }
+
+    @PostMapping("/findUsers")
+    ResponseEntity<List<UserDto>> findUsers (@RequestBody FindUserDto findUserDto) {
+        return ResponseEntity.ok(userService.getAllUser(findUserDto));
     }
 }
